@@ -1,211 +1,201 @@
-import java.util.Random;
 import java.util.Scanner;
+import java.util.Arrays;
 
 public class Battleship 
 {
-	public static void main(String[] args) 
-	{
-	    int[][] board = new int[5][5];
-	    int[][] ships = new int[3][2];
-	    int[] shoot = new int[2];
-	    int attempts=0,
-	        shotHit=0;
 
-	    initBoard(board);
-	    initShips(ships);
+    static Scanner in = new Scanner(System.in);
+    public static boolean hideShip = true; //Make the ship hidden or not for testing
+    private static FireResult fr = new FireResult();
 
-	    System.out.println();
+    public static void main(String[] args)
+    {
+        do
+        {
+            System.out.println("Privet, comrade.");
+            System.out.println("Welcome to modified battleship program!");
 
-	    do
-	    {
-	        showBoard(board);
-	        shoot(shoot);
-	        attempts++;
 
-	        if(hit(shoot,ships))
-	        {
-	            hint(shoot,ships,attempts);
-	            shotHit++;
-	        }                
-	        else
-	        
-	            hint(shoot,ships,attempts);
-	            
-	        changeboard(shoot,ships,board);
-	    }
-	    
-	    while(shotHit!=3);
+            String[][] board = new String[8][8];
+            createBoard(board);
+            createShip(board, 4);
 
-	    System.out.println("\n\n\nBattleship Java game finished! You hit 3 ships in "+attempts+" attempts");
-	    showBoard(board);
-	}
+            int torpedoes = 0;
+            int hits = 0;
+            int difficulty = getDifficulty();
 
-	public static void initBoard(int[][] board)
-	{
-	    for(int row=0 ; row < 5 ; row++ )
-	    {
-	        for(int column=0 ; column < 5 ; column++ )
-	        {
-	            board[row][column]=-1;
-	        }
-	    }
-	}
+            if(difficulty == 1)
+            {
+                torpedoes = 15;
+            }
+            else if(difficulty == 2)
+            {
+                torpedoes = 10;
+            }
+            else
+            {
+                torpedoes = 5;
+            }
 
-	public static void showBoard(int[][] board)
-	{
-	    System.out.println("\t1 \t2 \t3 \t4 \t5");
-	    System.out.println();
+            System.out.println("You have only " + torpedoes + " torpedoes to sink the ship... good luck!");
 
-	    for(int row=0 ; row < 5 ; row++ )
-	    {
-	        System.out.print((row+1)+"");
-	        for(int column=0 ; column < 5 ; column++ )
-	        {
-	            if(board[row][column]==-1)
-	            {
-	                System.out.print("\t"+"~");
-	            }
-	            
-	            else if(board[row][column]==0)
-	            {
-	                System.out.print("\t"+"*");
-	            }
-	            
-	            else if(board[row][column]==1)
-	            {
-	                System.out.print("\t"+"X");
-	            }
+            while(torpedoes > 0 && hits < 4)
+            {
+                showBoard(board);
+                fire(board, hits, torpedoes);
+                // Get results from FireResult static class
+                hits = fr.hits;
+                torpedoes = fr.torpedoes;
 
-	        }
-	        System.out.println();
-	    }
+                // Original logic continues
+                torpedoes--;
+            }
+            results(hits, torpedoes);
+        }while(repeat());
+    }
 
-	}
+    public static int getDifficulty()
+    {
+        System.out.println("Select a difficulty: \n 1. Normal \n 2. Hard \n 3. or any other number = impossible!");
+        return in.nextInt();
+    }
 
-	public static void initShips(int[][] ships)
-	{
-	    Random random = new Random();
+    public static void createBoard(String[][] board)
+    {
+        for(int x = 0; x < board.length; x++)
+            for(int y = 0; y < board[0].length; y++)
+                board[x][y] = "~";
+    }
 
-	    for(int ship=0 ; ship < 3 ; ship++)
-	    {
-	        ships[ship][0]=random.nextInt(5);
-	        ships[ship][1]=random.nextInt(5);
+    public static void showBoard(String[][] board)
+    {
+        System.out.println();
+        System.out.println("  1 2 3 4 5 6 7 8");
+        for(int x = 0; x < board.length; x++)
+        {
+            if(hideShip == false)
+            {
+                System.out.print(x + 1);
+                for(int y = 0; y < board[0].length; y++)
+                {
+                    System.out.print(" " + board[x][y]);
+                }
+                System.out.println("");
+            }
+            else
+            {
+                System.out.print(x + 1);
+                for(int y = 0; y < board[0].length; y++)
+                {
+                    if(board[x][y].equals("S"))
+                    {
+                        System.out.print(" " + "~");
+                    }
+                    else
+                    {
+                        System.out.print(" " + board[x][y]);
+                    }
+                }
+                System.out.println("");
+            }
+        }
+        System.out.println();
+    }
 
-	        //let's check if that shot was already tried 
-	        //if it was, just finish the do...while when a new pair was randomly selected
-	        for(int last=0 ; last < ship ; last++)
-	        {
-	            if( (ships[ship][0] == ships[last][0])&&(ships[ship][1] == ships[last][1]) )
-	            {
-	                do
-	                {
-	                    ships[ship][0]=random.nextInt(5);
-	                    ships[ship][1]=random.nextInt(5);
-	                }
-	                while( (ships[ship][0] == ships[last][0])&&(ships[ship][1] == ships[last][1]) );
-	            }
-	        }
+    public static void createShip(String[][] board, int size)
+    {
+        if(Math.random() < 0.5)
+        {
+            int col = (int)(Math.random()*5);
+            int row = (int)(Math.random()*7);
+            for(int i = 0; i < size; i++)
+            {
+                board[row][col+i] = "S";
+            }
+        }
+        else
+        {
+            int col = (int)(Math.random()*7);
+            int row = (int)(Math.random()*5);
+            for(int i = 0; i < size; i++)
+            {
+                board[row+i][col] = "S";
+            }
+        }
+    }
 
-	    }
-	}
+    public static void fire(String[][] board, int hits, int torpedoes)
+    {
+        int row = 0, col = 0;
+        System.out.println("You have " + torpedoes + " torpedoes left...");
+        System.out.println("Select a row to fire in: ");
+        row = in.nextInt();
+        while(row > 8 || row < 1)
+        {
+            System.out.println("Enter a valid row (1 - 8) and try again...");
+            row = in.nextInt();
+        }
+        System.out.println("Select a column to fire in: ");
+        col = in.nextInt();
+        while(col > 8 || col < 1)
+        {
+            System.out.println("Enter a valid column (1 - 8) and try again...");
+            col = in.nextInt();
+        }
 
-	public static void shoot(int[] shoot)
-	{
-	    Scanner input = new Scanner(System.in);
+        if(board[row-1][col-1].equals("X") || board[row-1][col-1].equals("M"))
+        {
+            torpedoes++;
+        }
+        else if(board[row-1][col-1].equals("S"))
+        {
+            hits++;
+            System.out.println("Hit!");
+            board[row-1][col-1] = "X";
+        }
+        else
+        {
+            System.out.println("Miss!");
+            board[row-1][col-1] = "M";
+        }
 
-	    System.out.print("Row: ");
-	    shoot[0] = input.nextInt();
-	    shoot[0]--;
+        fr.hits = hits;
+        fr.torpedoes = torpedoes;
+    }
 
-	    System.out.print("Column: ");
-	    shoot[1] = input.nextInt();
-	    shoot[1]--;
+    public static void results(int hits, int torpedoes)
+    {
+        if(hits < 4)
+            System.out.println("Sorry, you didn't sink the ship :(");
+        if(torpedoes < 1)
+            System.out.println("You have lost all of your torpedoes!");
+        else
+        if(hits >= 4)
+        {
+            System.out.println("Congratulations, comrade, you sank the ship. GG WP!");
+        }
+    }
 
-	}
-
-	public static boolean hit(int[] shoot, int[][] ships)
-	{
-
-	    for(int ship=0 ; ship<ships.length ; ship++)
-	    {
-	        if( shoot[0]==ships[ship][0] && shoot[1]==ships[ship][1])
-	        {
-	            System.out.printf("You hit a ship located in (%d,%d)\n",shoot[0]+1,shoot[1]+1);
-	            return true;
-	        }
-	    }
-	    return false;
-	}
-
-	public static void hint(int[] shoot, int[][] ships, int attempt)
-	{
-	    int row=0,
-	        column=0;
-
-	    for(int line=0 ; line < ships.length ; line++)
-	    {
-	        if(ships[line][0]==shoot[0])
-	        {
-	         row++;
-	        }
-	        if(ships[line][1]==shoot[1])
-	        {
-	            column++;
-	        }
-	    }
-
-	    System.out.printf("\nHint %d: \nRow %d -> %d ships\n" +
-	                             "Column %d -> %d ships\n",attempt,shoot[0]+1,row,shoot[1]+1,column);
-	}
-
-	public static void changeboard(int[] shoot, int[][] ships, int[][] board)
-	{
-	    if(hit(shoot,ships))
-	    {
-	        board[shoot[0]][shoot[1]]=1;
-	    }
-	    else
-	    {
-	        board[shoot[0]][shoot[1]]=0;
-	    }
-	}
-	   public static void showShips(int[][] ships)
-	{
-		   for (int ship = 0; ship < ships[0].length; ship++) 
-	       {
-	            System.out.println("Ship: " + (ship + 1));
-	            System.out.println("Position 1: (" + (ships[ship][0]+1) + "," + (ships[ship][1]+1) + ")");
-	       }
-	       
-		   System.out.println("\t1 \t2 \t3 \t4 \t5");
-	       System.out.println();
-
-	        for (int row = 0; row < 5; row++) 
-	        {
-	        	System.out.print((row + 1) + "");
-	        	for (int column = 0; column < 5; column++) 
-	        	{
-	        		boolean flag = false;
-	        		for (int ship = 0; ship < ships[0].length; ship++) 
-	        		{
-	        			if (row == ships[ship][0] && column == ships[ship][1]) 
-	        			{
-	        				flag = true;
-	        			}
-	        		}
-	            
-	        		if (flag) 
-	        		{
-	        			System.out.print("\t" + "x");
-	        		} 
-	        		
-	        		else 
-	        		{
-	        			System.out.print("\t" + "~");
-	        		}
-	        	}
-	        	System.out.println();
-	        }
-	}
-	
+    public static boolean repeat()
+    {
+        int repeat;
+        System.out.println();
+        Scanner in = new Scanner(System.in);
+        do
+        {
+            System.out.println("Would you like to play again? 1. YES, 2. NO");
+            repeat = in.nextInt();
+            if(repeat < 1 || repeat > 2)
+            {
+                System.out.println(repeat + " is not a valid entry.");
+            }
+        }
+        while(repeat < 1 || repeat > 2);
+        System.out.println();
+        return repeat == 1;
+    }
+    public static class FireResult {
+        int hits;
+        int torpedoes;
+    }
 }
